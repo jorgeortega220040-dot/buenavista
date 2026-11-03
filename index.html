@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Identificador de Construcciones | Buenavista del Cobre</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f0a14;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        
+        #header-superior {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 56px;
+            background: linear-gradient(135deg, rgba(38, 16, 51, 0.96) 0%, rgba(20, 9, 28, 0.98) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+        }
+        .header-izq {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .header-izq .brand-title {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #ffffff;
+        }
+        .header-izq .brand-sub {
+            font-size: 10px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .header-der {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #ffffff;
+            text-align: right;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+        }
+        
+        #map { 
+            width: 100vw; 
+            height: calc(100vh - 56px); 
+            margin-top: 56px; 
+            background: #09060d;
+        }
+
+        /* Botonera de respaldo flotante */
+        .backup-bar {
+            position: absolute;
+            bottom: 18px;
+            left: 18px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+        }
+        .btn-backup {
+            background: rgba(26, 17, 34, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: all 0.2s ease;
+        }
+        .btn-backup:hover {
+            background: rgba(45, 25, 60, 0.95);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: rgba(26, 17, 34, 0.96) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6) !important;
+            padding: 0 !important;
+            color: #ffffff !important;
+        }
+        .leaflet-popup-content {
+            margin: 16px 18px !important;
+            line-height: 1.4 !important;
+        }
+        .leaflet-popup-tip {
+            background: rgba(26, 17, 34, 0.96) !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        }
+        .leaflet-container a.leaflet-popup-close-button {
+            color: rgba(255, 255, 255, 0.7) !important;
+            padding: 8px 8px 0 0 !important;
+        }
+
+        .popup-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 230px;
+        }
+        .popup-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        }
+        .popup-header .tag {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 3px;
+        }
+        .popup-header .title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.25;
+        }
+        .popup-body {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .status-toggle-box {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .status-toggle-box:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        .status-toggle-box span {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+            user-select: none;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.25);
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+        input:checked + .slider {
+            background-color: #10b981;
+        }
+        input:checked + .slider:before {
+            transform: translateX(18px);
+        }
+
+        .etiqueta-fija {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .etiqueta-texto {
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 11px;
+            text-shadow: 
+                0 0 3px rgba(0, 0, 0, 0.9), 
+                0 1px 4px rgba(0, 0, 0, 0.95),
+                0 2px 6px rgba(0, 0, 0, 0.9);
+            white-space: nowrap;
+            text-align: center;
+            transform: translate(-50%, -50%);
+            display: inline-block;
+            pointer-events: none;
+            letter-spacing: 0.6px;
+        }
+
+        @media (max-width: 680px) {
+            #header-superior { height: 52px; padding: 0 12px; }
+            .header-izq .brand-title { font-size: 11px; }
+            .header-izq .brand-sub { display: none; }
+            .header-der { font-size: 9px; padding: 4px 8px; }
+            #map { height: calc(100vh - 52px); margin-top: 52px; }
+        }
+    </style>
+</head>
+<body>
+    <header id="header-superior">
+        <div class="header-izq">
+            <span class="brand-title">INGENIERÍA COSTOS Y SERVICIOS</span>
+            <span class="brand-sub">Control y Levantamiento de Obra</span>
+        </div>
+        <div class="header-der">
+            GRUPO MÉXICO • BUENAVISTA DEL COBRE
+        </div>
+    </header>
+
+    <div class="backup-bar">
+        <button class="btn-backup" onclick="descargarAvance()">💾 Exportar Avance</button>
+        <button class="btn-backup" onclick="document.getElementById('input-file').click()">📂 Cargar Avance</button>
+        <input type="file" id="input-file" style="display:none" accept=".json" onchange="cargarAvance(event)">
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        var datos_divisiones = {"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"_center": [30.512433506443486, -109.63944674958083], "_fixed_id": "div_idx_0", "id": "", "NOMBRE": "EL TAJO"}, "geometry": {"coordinates": [[[[-109.64409557840759, 30.510375010417786], [-109.64357148007473, 30.51175756515644], [-109.64418247357015, 30.51229945457673], [-109.64479699893056, 30.513497130154146], [-109.64558501005682, 30.51401899567968], [-109.64521293241302, 30.514452295858085], [-109.64424852650778, 30.51390673453857], [-109.64328850834123, 30.51213714144969], [-109.64289877661797, 30.51202379124188], [-109.64250722365536, 30.5120415713139], [-109.64211293650658, 30.512256047297676], [-109.64054337459419, 30.512567558310245], [-109.63942922610035, 30.51280730165414], [-109.639940602651, 30.51324980768213], [-109.64023058347789, 30.513274692342197], [-109.64084856100219, 30.513313927060697], [-109.64185384336989, 30.513641355246186], [-109.6421826145351, 30.514508187985456], [-109.64151292786345, 30.51455585391851], [-109.6413788056405, 30.514215650557887], [-109.64119085542787, 30.514115328037043], [-109.63901423925306, 30.513600798998446], [-109.63804030407684, 30.512836509180058], [-109.63726953842261, 30.51198690358954], [-109.63727380656246, 30.5116809309351], [-109.63797889960387, 30.5118085235545], [-109.63853421891811, 30.511814326568587], [-109.63892729368987, 30.51168728240605], [-109.63931991087141, 30.511593019837928], [-109.64257822406792, 30.51147399248898], [-109.6428811250342, 30.51147714734265], [-109.64335338288113, 30.510192418663955], [-109.64409557840759, 30.510375010417786]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.5227308287133, -109.65825366362762], "_fixed_id": "div_idx_1", "id": "", "NOMBRE": "CASETA 3"}, "geometry": {"coordinates": [[[[-109.65840831457272, 30.5224148279634], [-109.65862891240974, 30.522897984950255], [-109.65847876266338, 30.52325983545727], [-109.65825986122688, 30.523342282698636], [-109.65787132029469, 30.522563672476338], [-109.65840831457272, 30.5224148279634]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.527614949841396, -109.65188052713945], "_fixed_id": "div_idx_2", "id": "", "NOMBRE": "DEPOSITO DE CHATARRA"}, "geometry": {"coordinates": [[[[-109.65376065938074, 30.52599128470743], [-109.65384067363806, 30.52613965576042], [-109.65367904584565, 30.526416680200196], [-109.65350036661152, 30.526556913157037], [-109.65348945855023, 30.526890141042095], [-109.65344661616541, 30.52725036182929], [-109.65344412932149, 30.52743066792221], [-109.65289455562866, 30.52791680007696], [-109.65245813195692, 30.528436887847832], [-109.65221572810408, 30.528620176480306], [-109.6513875254642, 30.529168994060896], [-109.651160911721, 30.529122931072962], [-109.65011763746053, 30.52787712601844], [-109.6502908810248, 30.527673998700074], [-109.65075963128876, 30.52755590098272], [-109.6506601954071, 30.52744284685188], [-109.65065189866252, 30.52735805966505], [-109.65070815143508, 30.527170113711765], [-109.6507559782804, 30.52713508918033], [-109.65086308450789, 30.52714985992469], [-109.65083696343126, 30.526756138396525], [-109.65086436100202, 30.526600681097563], [-109.65095817943305, 30.526434982414848], [-109.65115088123716, 30.526193803130184], [-109.65129547759696, 30.52623628465208], [-109.65137985148826, 30.526297268701185], [-109.65145636698341, 30.526470195620853], [-109.65160066205567, 30.526534532088196], [-109.65180995789892, 30.526462926122864], [-109.6518814329976, 30.526429512036835], [-109.65199055028546, 30.526412881209527], [-109.65208168880285, 30.526441147214637], [-109.65230625359776, 30.526406584467225], [-109.65243111165945, 30.52639284840445], [-109.65258833740961, 30.526320702548233], [-109.65264288930233, 30.526255691553647], [-109.65274004316322, 30.52619112111109], [-109.65313336707065, 30.526049010027194], [-109.65320653233985, 30.52600741576963], [-109.65338674644521, 30.525984687980007], [-109.65356833111986, 30.52597700175742], [-109.65376065938074, 30.52599128470743]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.532826979492995, -109.6502588830563], "_fixed_id": "div_idx_3", "id": "", "NOMBRE": "VIAS FERROCARRIL"}, "geometry": {"coordinates": [[[[-109.65006559975235, 30.531640326129345], [-109.65047752595753, 30.53152437328239], [-109.65075051729966, 30.531412444711655], [-109.65110457912358, 30.531372394798378], [-109.65129257261333, 30.531472704057606], [-109.65137447440735, 30.53148448120761], [-109.65116751539699, 30.531843001585347], [-109.65103742902112, 30.532120348784563], [-109.65084743928062, 30.532621123717124], [-109.65066421254625, 30.533089180801156], [-109.65057996787941, 30.53324678126906], [-109.65044277079562, 30.533353285589982], [-109.65043794996816, 30.534272653164866], [-109.65008756231266, 30.534274486979214], [-109.65006297180659, 30.533313830244328], [-109.65001532061297, 30.5332218044945], [-109.64990850041396, 30.533071787263676], [-109.64983328725027, 30.533032755543527], [-109.64972757309414, 30.532916903330584], [-109.64977425014868, 30.5327370556554], [-109.6497828293749, 30.532573206832748], [-109.64974098967998, 30.53240337079018], [-109.64965632808543, 30.532134728174967], [-109.64963905561211, 30.532014328096086], [-109.64963455789562, 30.53188313125976], [-109.64963637194921, 30.531751999852005], [-109.65006559975235, 30.531640326129345]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.5353906782003, -109.65031906817217], "_fixed_id": "div_idx_4", "id": "", "NOMBRE": "BASURON"}, "geometry": {"coordinates": [[[[-109.65077280696846, 30.538134122654913], [-109.65012487783059, 30.538137655233875], [-109.65004073606798, 30.536461886844418], [-109.65001197523883, 30.534319469556184], [-109.65054863117486, 30.534314784300765], [-109.65077280696846, 30.538134122654913]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.506149329285527, -109.64497159999382], "_fixed_id": "div_idx_5", "id": "", "NOMBRE": "DEPORTES"}, "geometry": {"coordinates": [[[[-109.64485009746328, 30.50453117627605], [-109.64668882194411, 30.505431905771832], [-109.64594470876722, 30.50751530030394], [-109.64530130701327, 30.50718802350905], [-109.64513424811757, 30.507098853138253], [-109.64492411151258, 30.50708209607738], [-109.644771960398, 30.507131516954757], [-109.64449484372797, 30.507696953961943], [-109.64313475871623, 30.506866752799215], [-109.64450909222265, 30.504243470494156], [-109.64485009746328, 30.50453117627605]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.500958622795423, -109.63926095115627], "_fixed_id": "div_idx_6", "id": "", "NOMBRE": "LAGUNA 1"}, "geometry": {"coordinates": [[[[-109.63811887644543, 30.498010958598098], [-109.63897617246627, 30.498311087288037], [-109.63958836745245, 30.498525404618192], [-109.64260725398022, 30.498953972747053], [-109.64241986556453, 30.500026727782895], [-109.63974861036476, 30.500009807037287], [-109.64019094767328, 30.500571812432465], [-109.64101319529702, 30.501345433158384], [-109.64310605552872, 30.502722460726964], [-109.64130939982401, 30.503643655872754], [-109.64071499600009, 30.502821410290963], [-109.64011999306148, 30.502647622318893], [-109.63975376923706, 30.50235964128827], [-109.63946843777737, 30.501700910565212], [-109.63790401486764, 30.501655426341333], [-109.63796940709787, 30.498774441652706], [-109.63773511773734, 30.49868091649123], [-109.63760178229712, 30.498588446149313], [-109.63758288277796, 30.4984352396566], [-109.63765621907525, 30.498304855640214], [-109.63789026041752, 30.498114218832434], [-109.63811887644543, 30.498010958598098]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.500364294016613, -109.63523828738116], "_fixed_id": "div_idx_7", "id": "", "NOMBRE": "LAGUNA 2"}, "geometry": {"coordinates": [[[[-109.63760178229712, 30.498588446149313], [-109.63773511773734, 30.49868091649123], [-109.63796940709787, 30.498774441652706], [-109.63790401486764, 30.501655426341333], [-109.63243511674337, 30.501477937550373], [-109.63265139112579, 30.499250650482853], [-109.63366121399042, 30.49803716938589], [-109.63402024982312, 30.49763290882817], [-109.6348075837261, 30.497888886002436], [-109.63576256671392, 30.498190330086107], [-109.63624307825087, 30.498294344268842], [-109.63760178229712, 30.498588446149313]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.496741473686516, -109.63936418439147], "_fixed_id": "div_idx_8", "id": "", "NOMBRE": "COMEDOR Y ALEDAÑOS"}, "geometry": {"coordinates": [[[[-109.63811887644543, 30.498010958598098], [-109.63789498109136, 30.49777546258366], [-109.63765482885306, 30.497649999178297], [-109.63744652548701, 30.49765419727343], [-109.6374720838669, 30.49506606230129], [-109.64077354352716, 30.496645192432247], [-109.64177211638804, 30.49683775494079], [-109.64428300664332, 30.498401271836553], [-109.6412414253458, 30.498092727544396], [-109.63980588550618, 30.49785917095101], [-109.63944413800454, 30.497855395550975], [-109.63912972269621, 30.498077983762812], [-109.63897617246627, 30.498311087288037], [-109.63811887644543, 30.498010958598098]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.48073580681271, -109.64368355623854], "_fixed_id": "div_idx_9", "id": "", "NOMBRE": "AEREOPUERTO"}, "geometry": {"coordinates": [[[[-109.64913832114851, 30.491958117914013], [-109.64660456057966, 30.49266045354519], [-109.64410181171625, 30.485056839431792], [-109.64294642920393, 30.4852980128952], [-109.64144729055094, 30.48087427214422], [-109.64266621345112, 30.4805973414812], [-109.63869777441069, 30.4695538586681], [-109.64129664385422, 30.468968920876126], [-109.64913832114851, 30.491958117914013]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.486198872459212, -109.63566397370306], "_fixed_id": "div_idx_10", "id": "", "NOMBRE": "NAVE PRINCIPAL"}, "geometry": {"coordinates": [[[[-109.63767323497066, 30.485592755338015], [-109.63764610836334, 30.487690883967026], [-109.63692253698395, 30.487694250079233], [-109.6367014004247, 30.487564430216576], [-109.63624604893315, 30.487488627881216], [-109.6355426196644, 30.487490272808518], [-109.6334002409212, 30.48749525924292], [-109.63295445034332, 30.487337576544334], [-109.63323531799388, 30.486804989580406], [-109.63370327206795, 30.487032121956982], [-109.63363130424445, 30.485559565936594], [-109.6358458511963, 30.485570004989196], [-109.6358506486682, 30.484999913804735], [-109.63618297092034, 30.48499883660271], [-109.63619061468192, 30.485580595689445], [-109.63767323497066, 30.485592755338015]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.48664181965252, -109.63835554053026], "_fixed_id": "div_idx_11", "id": "", "NOMBRE": "PLANTA DE ALAMBRON"}, "geometry": {"coordinates": [[[[-109.63764610836334, 30.487690883967026], [-109.63767323497066, 30.485592755338015], [-109.63767738735709, 30.485407912561023], [-109.63863193927774, 30.484750289124793], [-109.6399354086999, 30.484787572860157], [-109.64010430369272, 30.48549791347916], [-109.63903405825373, 30.485476727533136], [-109.63907156754168, 30.48799539641529], [-109.63958023309978, 30.488018920680418], [-109.6396133228339, 30.48866409060887], [-109.63765754740116, 30.488643667804645], [-109.63764610836334, 30.487690883967026]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.48828838786759, -109.63669353509837], "_fixed_id": "div_idx_12", "id": "", "NOMBRE": "PLANTA PROPANO"}, "geometry": {"coordinates": [[[[-109.63765754740116, 30.488643667804645], [-109.63736122735293, 30.488639448896947], [-109.63596900622018, 30.488619617891107], [-109.63573342033051, 30.488616260699416], [-109.63573415617917, 30.48796051503576], [-109.63554511789113, 30.487942142886805], [-109.6355426196644, 30.487490272808518], [-109.63624604893315, 30.487488627881216], [-109.6367014004247, 30.487564430216576], [-109.63692253698395, 30.487694250079233], [-109.63764610836334, 30.487690883967026], [-109.63765754740116, 30.488643667804645]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.48987231906248, -109.63836340014325], "_fixed_id": "div_idx_13", "id": "", "NOMBRE": "PLANTA METALES PRECIOSOS"}, "geometry": {"coordinates": [[[[-109.63736122735293, 30.488639448896947], [-109.6396133228339, 30.48866409060887], [-109.6396624388719, 30.488913243113114], [-109.63987745142778, 30.489332618780345], [-109.63961759150249, 30.489415519724524], [-109.63933796834685, 30.48940713696433], [-109.63936510117615, 30.49032911840044], [-109.63928300658715, 30.49048491380704], [-109.63906682498357, 30.490602878680185], [-109.63821005382732, 30.490805230037367], [-109.63738561539189, 30.490800258418492], [-109.63736122735293, 30.488639448896947]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.496909788542883, -109.63598835325226], "_fixed_id": "div_idx_14", "id": "", "NOMBRE": "BASCULA ffcc"}, "geometry": {"coordinates": [[[[-109.6374720838669, 30.49506606230129], [-109.63744652548701, 30.49765419727343], [-109.63765482885306, 30.497649999178297], [-109.63789498109136, 30.49777546258366], [-109.63811887644543, 30.498010958598098], [-109.63789026041752, 30.498114218832434], [-109.63765621907525, 30.498304855640214], [-109.63758288277796, 30.4984352396566], [-109.63760178229712, 30.498588446149313], [-109.63624307825087, 30.498294344268842], [-109.63576256671392, 30.498190330086107], [-109.6348075837261, 30.497888886002436], [-109.6346707292626, 30.497465084325178], [-109.63437493038532, 30.49635449276059], [-109.63483418735356, 30.49615346996105], [-109.63489571259447, 30.49611586206997], [-109.63496747373426, 30.49609839822146], [-109.63523447097869, 30.496108480069907], [-109.63527634495381, 30.495821115961146], [-109.63544328079459, 30.49576639600728], [-109.63594136793985, 30.495797110641373], [-109.63595594827086, 30.494299961099227], [-109.63745325695031, 30.494322906487604], [-109.6374720838669, 30.49506606230129]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.493535532560415, -109.63670760142799], "_fixed_id": "div_idx_15", "id": "", "NOMBRE": "ALMACEN 18 FUNDICION"}, "geometry": {"coordinates": [[[[-109.63745325695031, 30.494322906487604], [-109.63595594827086, 30.494299961099227], [-109.63598674494214, 30.4927711040216], [-109.63600117757946, 30.49173662248875], [-109.63742268647921, 30.49176241740571], [-109.63745325695031, 30.494322906487604]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.489719853657718, -109.63667689172048], "_fixed_id": "div_idx_16", "id": "", "NOMBRE": "PATIO DE ALMACEN 03, FUNDICION"}, "geometry": {"coordinates": [[[[-109.63738561539189, 30.490800258418492], [-109.63742268647921, 30.49176241740571], [-109.63600117757946, 30.49173662248875], [-109.63599906511953, 30.491531945597973], [-109.63599663682739, 30.491296668631183], [-109.63596900622018, 30.488619617891107], [-109.63736122735293, 30.488639448896947], [-109.63738561539189, 30.490800258418492]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.49291633904351, -109.63527402122986], "_fixed_id": "div_idx_17", "id": "", "NOMBRE": "ALMACEN DE CONCENTRADO HUMEDO"}, "geometry": {"coordinates": [[[[-109.63599663682739, 30.491296668631183], [-109.63599343907443, 30.49153271698779], [-109.63595594827086, 30.494299961099227], [-109.63594136793985, 30.495797110641373], [-109.63544328079459, 30.49576639600728], [-109.63527634495381, 30.495821115961146], [-109.63523447097869, 30.496108480069907], [-109.63496747373426, 30.49609839822146], [-109.63489571259447, 30.49611586206997], [-109.63483418735356, 30.49615346996105], [-109.63437493038532, 30.49635449276059], [-109.63453440038603, 30.495704964726436], [-109.63459606075094, 30.491290208983873], [-109.63599663682739, 30.491296668631183]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.494615288699507, -109.63383941655816], "_fixed_id": "div_idx_18", "id": "", "NOMBRE": "TANQUE DE ALMACENAMIENTO ACIDO SULFURICO"}, "geometry": {"coordinates": [[[[-109.63459606075094, 30.491290208983873], [-109.63453440038603, 30.495704964726436], [-109.63437493038532, 30.49635449276059], [-109.6348075837261, 30.497888886002436], [-109.63402024982312, 30.49763290882817], [-109.632807456131, 30.493525612672578], [-109.63240492311563, 30.49162699413166], [-109.63251835711432, 30.491336738471894], [-109.63272009582687, 30.491349783722956], [-109.63324108898519, 30.49139532076193], [-109.63447884615586, 30.491324501194395], [-109.63459606075094, 30.491290208983873]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.48913082688923, -109.6340068552719], "_fixed_id": "div_idx_19", "id": "", "NOMBRE": "PLANTA DE FUERZA"}, "geometry": {"coordinates": [[[[-109.63599343907443, 30.49153271698779], [-109.63599663682739, 30.491296668631183], [-109.63599906511953, 30.491531945597973], [-109.63599343907443, 30.49153271698779]]], [[[-109.63196060460007, 30.49091193352924], [-109.6317634036004, 30.490574701515893], [-109.63171639742261, 30.490326479388937], [-109.63170365129471, 30.49003489998754], [-109.63175962846977, 30.489642035887353], [-109.63283021885663, 30.48768600879997], [-109.633175521391, 30.48750929731209], [-109.6334002409212, 30.48749525924292], [-109.6355426196644, 30.487490272808518], [-109.63554511789113, 30.487942142886805], [-109.63573415617917, 30.48796051503576], [-109.63573342033051, 30.488616260699416], [-109.63596900622018, 30.488619617891107], [-109.63599663682739, 30.491296668631183], [-109.63459606075094, 30.491290208983873], [-109.63447884615586, 30.491324501194395], [-109.63324108898519, 30.49139532076193], [-109.63272009582687, 30.491349783722956], [-109.63251835711432, 30.491336738471894], [-109.63196060460007, 30.49091193352924]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.493116231267823, -109.63025874055421], "_fixed_id": "div_idx_20", "id": "", "NOMBRE": "TANQUE DE AGUA CRUDA"}, "geometry": {"coordinates": [[[[-109.63133742033571, 30.49095457379557], [-109.63114493249934, 30.491783172549592], [-109.6311472247922, 30.49222036488596], [-109.63106553556068, 30.49249638030014], [-109.63020631689761, 30.4940720890359], [-109.62943276850686, 30.49373608223551], [-109.63102589179671, 30.49097133963781], [-109.63133742033571, 30.49095457379557]]]], "type": "MultiPolygon"}}, {"type": "Feature", "properties": {"_center": [30.491739738349175, -109.64113614309778], "_fixed_id": "div_idx_21", "id": "", "NOMBRE": "OFICINA FUNDICION"}, "geometry": {"coordinates": [[[[-109.64235859490924, 30.491053422813916], [-109.64184255614097, 30.491152823859327], [-109.64172475105251, 30.491250783101155], [-109.64170264847924, 30.491598131378996], [-109.64174974380036, 30.491881345319356], [-109.64177665643493, 30.492063779558876], [-109.64189709781922, 30.4922764853353], [-109.64199906157204, 30.492449960489964], [-109.64206342634029, 30.492560479856106], [-109.64152840974924, 30.492975605017435], [-109.64062980637098, 30.492252194783937], [-109.64047027546935, 30.491926297401406], [-109.64094940364386, 30.490747293434676], [-109.64235859490924, 30.491053422813916]]]], "type": "MultiPolygon"}}]};
+
+        var map = L.map('map', {
+            zoomControl: true,
+            maxZoom: 21
+        }).setView([30.714, -109.573], 15);
+        
+        var geojsonLayer;
+        
+        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 21,
+            attribution: '© Google'
+        }).addTo(map);
+
+        var STYLE_PENDIENTE = {
+            color: "#ffffff",
+            weight: 2.2,
+            opacity: 0.95,
+            fill: true,
+            fillColor: "#ffffff",
+            fillOpacity: 0.001
+        };
+
+        var STYLE_TERMINADO = {
+            color: "#10b981",
+            weight: 2.5,
+            opacity: 1,
+            fill: true,
+            fillColor: "#10b981",
+            fillOpacity: 0.15
+        };
+
+        // Clave unívoca por elemento
+        function obtenerClaveStorage(p) {
+            var raw = p.NOMBRE ? p.NOMBRE.toString().trim() : p._fixed_id;
+            return "estado_div_" + raw.replace(/\s+/g, '_');
+        }
+
+        function marcarListo(p, isChecked) {
+            var storageKey = obtenerClaveStorage(p);
+            if(isChecked) {
+                localStorage.setItem(storageKey, "completado");
+            } else {
+                localStorage.removeItem(storageKey);
+            }
+            
+            geojsonLayer.eachLayer(function(l) {
+                if(obtenerClaveStorage(l.feature.properties) === storageKey) {
+                    l.setStyle(isChecked ? STYLE_TERMINADO : STYLE_PENDIENTE);
+                }
+            });
+        }
+
+        function actualizarTodosLosEstilos() {
+            geojsonLayer.eachLayer(function(l) {
+                var key = obtenerClaveStorage(l.feature.properties);
+                var estaLista = localStorage.getItem(key) === "completado";
+                l.setStyle(estaLista ? STYLE_TERMINADO : STYLE_PENDIENTE);
+            });
+        }
+
+        // Funciones de respaldo para no perder el avance nunca
+        function descargarAvance() {
+            var data = {};
+            for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                if (k.startsWith("estado_div_")) {
+                    data[k] = localStorage.getItem(k);
+                }
+            }
+            var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "avance_buenavista_" + new Date().toISOString().slice(0,10) + ".json";
+            a.click();
+        }
+
+        function cargarAvance(evt) {
+            var file = evt.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var data = JSON.parse(e.target.result);
+                    Object.keys(data).forEach(function(k) {
+                        localStorage.setItem(k, data[k]);
+                    });
+                    actualizarTodosLosEstilos();
+                    alert("¡Avance cargado exitosamente!");
+                } catch(err) {
+                    alert("Error al leer el archivo JSON.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function onEachFeature(feature, layer) {
+            var p = feature.properties;
+            var nombre = p.NOMBRE || p.nombre || "Sin Nombre";
+            
+            var storageKey = obtenerClaveStorage(p);
+            var estaLista = localStorage.getItem(storageKey) === "completado";
+            layer.setStyle(estaLista ? STYLE_TERMINADO : STYLE_PENDIENTE);
+
+            if (p._center && p._center.length === 2) {
+                var labelIcon = L.divIcon({
+                    className: 'etiqueta-fija',
+                    html: '<span class="etiqueta-texto">' + String(nombre) + '</span>',
+                    iconSize: [0, 0]
+                });
+                L.marker(p._center, { 
+                    icon: labelIcon, 
+                    interactive: false 
+                }).addTo(map);
+            }
+
+            layer.on('click', function(e) {
+                var actualLista = localStorage.getItem(storageKey) === "completado";
+                
+                var container = document.createElement('div');
+                container.className = 'popup-card';
+                container.innerHTML = 
+                    '<div class="popup-header">' +
+                        '<span class="tag">División de Planta</span>' +
+                        '<div class="title">' + nombre + '</div>' +
+                    '</div>' +
+                    '<div class="popup-body">' +
+                        (p.id ? '<div><b>ID Objeto:</b> ' + p.id + '</div>' : '') +
+                    '</div>' +
+                    '<label class="status-toggle-box">' +
+                        '<span>Construcción Terminada</span>' +
+                        '<div class="switch">' +
+                            '<input type="checkbox" ' + (actualLista ? 'checked' : '') + '>' +
+                            '<span class="slider"></span>' +
+                        '</div>' +
+                    '</label>';
+
+                var chk = container.querySelector('input[type="checkbox"]');
+                chk.addEventListener('change', function(evt) {
+                    marcarListo(p, evt.target.checked);
+                });
+
+                L.popup({ maxWidth: 320, offset: [0, -4] })
+                    .setLatLng(e.latlng)
+                    .setContent(container)
+                    .openOn(map);
+            });
+        }
+
+        geojsonLayer = L.geoJSON(datos_divisiones, {
+            onEachFeature: onEachFeature
+        }).addTo(map);
+        
+        if (geojsonLayer.getLayers().length > 0) {
+            map.fitBounds(geojsonLayer.getBounds(), { padding: [35, 35] });
+        }
+    </script>
+</body>
+</html>
